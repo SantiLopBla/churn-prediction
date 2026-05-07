@@ -37,9 +37,23 @@ def encode_binary_columns(df):
 
     for col in binary_columns:
         if col in df_copy.columns:
+            
+            # count nulls before mapping to use as baseline
+            nulls_before = df[col].isnull().sum()
+
             # standardized map covers both yes/no and male/female
             df_copy[col] = df_copy[col].map({"yes": 1, "no": 0, "male": 1, "female": 0})
-    
+
+            # count nulls after mapping to detect values that didn't match
+            nulls_after = df_copy[col].isnull().sum()
+
+            # difference reveals how many values the map couldn't handle
+            new_nulls = nulls_after - nulls_before
+
+            # warn if any values were lost during mapping
+            if new_nulls > 0:
+                print(f"Warning: {new_nulls} values in '{col}' could not be mapped.")
+
     return df_copy
 
 
@@ -54,12 +68,14 @@ def transform(df):
         lambda col: col.str.lower() if col.dtype == "object" else col
     )
 
-    # identifier column — no predictive value
-    df_copy = df_copy.drop(columns=["customer_id"])
+    if "customer_id" in df_copy.columns:
+        df_copy = df_copy.drop(columns=["customer_id"])
+    else:
+        print(f"Warning: 'customer_id' not found. Available columns: {list(df_copy.columns)}")
 
     df_copy = encode_binary_columns(df_copy)
     df_copy = encode_categorical_columns(df_copy)
 
-    print(f"Transformación completa. Shape final: {df_copy.shape}")
+    print(f"Transformation complete. Final shape: {df_copy.shape}")
 
     return df_copy
