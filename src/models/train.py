@@ -2,7 +2,7 @@
 import pandas as pd
 from sklearn.linear_model import LogisticRegression
 from sklearn.model_selection import train_test_split
-
+import joblib
 
 def train(df: pd.DataFrame):
     # separate features from target column
@@ -24,6 +24,9 @@ def train(df: pd.DataFrame):
 
     # train the model on training data only — cv and test are never seen here
     model.fit(X_train, y_train)
+
+    # save trained model to disk for later use in prediction
+    joblib.dump(model, "models/churn_model.pkl")
 
     # return model and evaluation sets for use in evaluate.py and predict.py
     return model, X_cv, y_cv, X_test, y_test
