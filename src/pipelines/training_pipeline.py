@@ -17,7 +17,7 @@ def run_training_pipeline(filepath: str) -> None:
     df = transform(df)
 
     # train model and split data into cv and test sets
-    model, X_cv, y_cv, X_test, y_test = train(df)
+    lr, rf, X_cv_lr, X_cv, y_cv, X_test_lr, X_test, y_test = train(df)
 
     # report precision, recall and f1 to assess bias and variance
-    evaluate(model, X_cv, y_cv, X_test, y_test)
+    evaluate(lr, rf, X_cv_lr, X_cv, y_cv, X_test_lr, X_test, y_test)

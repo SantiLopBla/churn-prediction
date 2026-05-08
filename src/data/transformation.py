@@ -4,21 +4,35 @@ from sklearn.preprocessing import StandardScaler
 # two-value columns — mapped directly to 0/1
 binary_columns = [
     "gender",
-    "discount_applied",
-    "price_increase_last_3m"
+    "partner",
+    "dependents",
+    "phoneservice",
+    "paperlessbilling",
+    "churn"
 ]
-
 # three or more values — handled with one-hot encoding
 categorical_columns = [
-    "country",
-    "city", 
-    "customer_segment",
-    "signup_channel",
-    "contract_type",
-    "payment_method",
-    "complaint_type",
-    "survey_response"
+    "multiplelines",
+    "internetservice",
+    "onlinesecurity",
+    "onlinebackup",
+    "deviceprotection",
+    "techsupport",
+    "streamingtv",
+    "streamingmovies",
+    "contract",
+    "paymentmethod"
 ]
+
+def fix_column_types(df):
+    df_copy = df.copy()
+
+    # totalcharges comes as object in the raw data — convert to numeric
+    # errors='coerce' turns unparseable values into NaN (handled later by imputation)
+    if "totalcharges" in df_copy.columns:
+        df_copy["totalcharges"] = pd.to_numeric(df_copy["totalcharges"], errors="coerce")
+
+    return df_copy
 
 def scale_features(df):
     df_copy = df.copy()
@@ -95,16 +109,15 @@ def transform(df):
         lambda col: col.str.lower() if col.dtype == "object" else col
     )
 
-    if "customer_id" in df_copy.columns:
-        df_copy = df_copy.drop(columns=["customer_id"])
+    if "customerid" in df_copy.columns:
+        df_copy = df_copy.drop(columns=["customerid"])
     else:
-        print(f"Warning: 'customer_id' not found. Available columns: {list(df_copy.columns)}")
+        print(f"Warning: 'customerid' not found. Available columns: {list(df_copy.columns)}")
 
-
+    df_copy = fix_column_types(df_copy)
     df_copy= impute_missing_values (df_copy)
     df_copy = encode_binary_columns(df_copy)
     df_copy = encode_categorical_columns(df_copy)
-    df_copy = scale_features(df_copy)
 
     print(f"Transformation complete. Final shape: {df_copy.shape}")
 

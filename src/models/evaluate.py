@@ -1,38 +1,35 @@
 from sklearn.metrics import accuracy_score, precision_score, recall_score, f1_score
-from sklearn.linear_model import LogisticRegression
 
-def evaluate(model, X_cv, y_cv, X_test, y_test) -> None:
-    # generate predictions on the cross validation set
-    y_pred_cv = model.predict(X_cv)
 
-    # calculate classification metrics for cv set
-    # precision and recall matter more than accuracy on imbalanced churn data
-    acc_cv  = accuracy_score(y_cv, y_pred_cv)
-    prec_cv = precision_score(y_cv, y_pred_cv)
-    rec_cv  = recall_score(y_cv, y_pred_cv)
-    f1_cv   = f1_score(y_cv, y_pred_cv)
+def evaluate_single_model(model, model_name, X_cv, y_cv, X_test, y_test, threshold=0.5) -> None:
+    print(f"\n{'='*30}")
+    print(f" {model_name}")
+    print(f"{'='*30}")
 
-    # generate predictions on the test set
-    y_pred_test = model.predict(X_test)
-
-    # calculate classification metrics for test set
-    acc_test  = accuracy_score(y_test, y_pred_test)
-    prec_test = precision_score(y_test, y_pred_test)
-    rec_test  = recall_score(y_test, y_pred_test)
-    f1_test   = f1_score(y_test, y_pred_test)
+    # use probability threshold instead of default predict() for better control over imbalanced data
+    y_pred_cv   = (model.predict_proba(X_cv)[:, 1] >= threshold).astype(int)
+    y_pred_test = (model.predict_proba(X_test)[:, 1] >= threshold).astype(int)
 
     # report cv metrics — used to detect bias or variance issues
     print("CV Results:")
-    print(f"  Accuracy:  {acc_cv:.4f}")
-    print(f"  Precision: {prec_cv:.4f}")
-    print(f"  Recall:    {rec_cv:.4f}")
-    print(f"  F1:        {f1_cv:.4f}")
+    print(f"  Accuracy:  {accuracy_score(y_cv, y_pred_cv):.4f}")
+    print(f"  Precision: {precision_score(y_cv, y_pred_cv):.4f}")
+    print(f"  Recall:    {recall_score(y_cv, y_pred_cv):.4f}")
+    print(f"  F1:        {f1_score(y_cv, y_pred_cv):.4f}")
 
     print("-" * 15)
 
     # report test metrics — final performance benchmark
-    print("\nTest Results:")
-    print(f"  Accuracy:  {acc_test:.4f}")
-    print(f"  Precision: {prec_test:.4f}")
-    print(f"  Recall:    {rec_test:.4f}")
-    print(f"  F1:        {f1_test:.4f}")
+    print("Test Results:")
+    print(f"  Accuracy:  {accuracy_score(y_test, y_pred_test):.4f}")
+    print(f"  Precision: {precision_score(y_test, y_pred_test):.4f}")
+    print(f"  Recall:    {recall_score(y_test, y_pred_test):.4f}")
+    print(f"  F1:        {f1_score(y_test, y_pred_test):.4f}")
+
+
+def evaluate(lr, rf, X_cv_lr, X_cv, y_cv, X_test_lr, X_test, y_test) -> None:
+    # evaluate logistic regression with default threshold
+    evaluate_single_model(lr, "Logistic Regression", X_cv_lr, y_cv, X_test_lr, y_test)
+
+    # evaluate random forest with lower threshold to handle class imbalance
+    evaluate_single_model(rf, "Random Forest", X_cv, y_cv, X_test, y_test, threshold=0.3)
