@@ -1,4 +1,5 @@
 import pandas as pd
+from sklearn.preprocessing import StandardScaler
 
 # two-value columns — mapped directly to 0/1
 binary_columns = [
@@ -19,6 +20,32 @@ categorical_columns = [
     "survey_response"
 ]
 
+def scale_features(df):
+    df_copy = df.copy()
+
+    # exclude target column from scaling
+    numeric_cols = df_copy.select_dtypes(include=["int64", "float64"]).columns
+    numeric_cols = [col for col in numeric_cols if col != "churn"]
+
+    scaler = StandardScaler()
+    df_copy[numeric_cols] = scaler.fit_transform(df_copy[numeric_cols])
+
+    return df_copy
+
+
+
+def impute_missing_values(df):
+    df_copy = df.copy()
+
+    for col in df_copy.columns:
+        if df_copy[col].dtype == "object":
+            # categorical: fill with most frequent value
+            df_copy[col] = df_copy[col].fillna(df_copy[col].mode()[0])
+        else:
+            # numeric: fill with median to avoid outlier influence
+            df_copy[col] = df_copy[col].fillna(df_copy[col].median())
+
+    return df_copy
 
 def encode_categorical_columns(df):
     df_copy = df.copy()
@@ -73,8 +100,11 @@ def transform(df):
     else:
         print(f"Warning: 'customer_id' not found. Available columns: {list(df_copy.columns)}")
 
+
+    df_copy= impute_missing_values (df_copy)
     df_copy = encode_binary_columns(df_copy)
     df_copy = encode_categorical_columns(df_copy)
+    df_copy = scale_features(df_copy)
 
     print(f"Transformation complete. Final shape: {df_copy.shape}")
 

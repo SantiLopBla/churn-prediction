@@ -20,7 +20,7 @@ def train(df: pd.DataFrame):
     # initialize logistic regression
     # max_iter=1000 prevents convergence warnings on larger datasets
     # random_state=42 ensures reproducibility
-    model = LogisticRegression(max_iter=1000, random_state=42)
+    model = LogisticRegression(max_iter=15000, random_state=42, class_weight="balanced")
 
     # train the model on training data only — cv and test are never seen here
     model.fit(X_train, y_train)

@@ -2,8 +2,12 @@ import pandas as pd
 
 # columns the model needs to run
 required_columns = [
-    "customerID", "gender", "tenure",
-    "MonthlyCharges", "TotalCharges", "Churn"
+    "customer_id",
+    "gender",
+    "churn",
+    "tenure_months",
+    "monthly_fee",
+    "contract_type"
 ]
 
 def validate(df: pd.DataFrame) -> None:
