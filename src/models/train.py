@@ -33,9 +33,10 @@ def train(df: pd.DataFrame):
     rf = RandomForestClassifier(n_estimators=100, random_state=42, class_weight="balanced")
     rf.fit(X_train, y_train)
 
-    # save both models to disk
+    # save both models and scaler to disk
     joblib.dump(lr, "models/logistic_regression.pkl")
     joblib.dump(rf, "models/random_forest.pkl")
+    joblib.dump(scaler, "models/scaler.pkl")  
 
     # return both models and evaluation sets
     return lr, rf, X_cv_lr, X_cv, y_cv, X_test_lr, X_test, y_test
