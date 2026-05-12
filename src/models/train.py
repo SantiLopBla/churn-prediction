@@ -59,4 +59,4 @@ def train(df: pd.DataFrame):
     joblib.dump(xgb, "models/xgboost.pkl")
     joblib.dump(scaler, "models/scaler.pkl")
 
-    return lr, rf, xgb, X_cv_lr, X_cv, y_cv, X_test_lr, X_test, y_test
+    return lr, rf, xgb, X_train, y_train, X_cv_lr, X_cv, y_cv, X_test_lr, X_test, y_test
