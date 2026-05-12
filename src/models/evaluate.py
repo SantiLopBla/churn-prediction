@@ -7,11 +7,13 @@ def evaluate_single_model(model, model_name, X_cv, y_cv, X_test, y_test, thresho
     print(f" {model_name}")
     print(f"{'='*30}")
 
-    # use probability threshold instead of default predict() for better control over imbalanced data
+    # convert probabilities to binary predictions using the given threshold
+    # predict_proba returns [prob_class_0, prob_class_1] — [:, 1] takes the churn probability
+    # default predict() uses 0.5 — lowering it catches more churners at the cost of more false positives
     y_pred_cv   = (model.predict_proba(X_cv)[:, 1] >= threshold).astype(int)
     y_pred_test = (model.predict_proba(X_test)[:, 1] >= threshold).astype(int)
 
-    # report cv metrics — used to detect bias or variance issues
+    # cv metrics — used to detect bias (underfitting) or variance (overfitting)
     print("CV Results:")
     print(f"  Accuracy:  {accuracy_score(y_cv, y_pred_cv):.4f}")
     print(f"  Precision: {precision_score(y_cv, y_pred_cv):.4f}")
@@ -20,14 +22,18 @@ def evaluate_single_model(model, model_name, X_cv, y_cv, X_test, y_test, thresho
 
     print("-" * 15)
 
-    # report test metrics — final performance benchmark
+    # test metrics — final benchmark, should only be evaluated once
     print("Test Results:")
     print(f"  Accuracy:  {accuracy_score(y_test, y_pred_test):.4f}")
     print(f"  Precision: {precision_score(y_test, y_pred_test):.4f}")
     print(f"  Recall:    {recall_score(y_test, y_pred_test):.4f}")
     print(f"  F1:        {f1_score(y_test, y_pred_test):.4f}")
 
-    # plot confusion matrix to understand error distribution
+    # confusion matrix shows the distribution of correct and incorrect predictions
+    # top-left: true negatives (correctly predicted no churn)
+    # top-right: false positives (predicted churn but stayed)
+    # bottom-left: false negatives (predicted no churn but left) — most costly error
+    # bottom-right: true positives (correctly predicted churn)
     cm = confusion_matrix(y_test, y_pred_test)
     disp = ConfusionMatrixDisplay(confusion_matrix=cm, display_labels=["No Churn", "Churn"])
     disp.plot(cmap="Blues")
@@ -35,9 +41,11 @@ def evaluate_single_model(model, model_name, X_cv, y_cv, X_test, y_test, thresho
     plt.show()
 
 
-def evaluate(lr, rf, X_cv_lr, X_cv, y_cv, X_test_lr, X_test, y_test) -> None:
-    # evaluate logistic regression with default threshold
+def evaluate(lr, rf, xgb, X_cv_lr, X_cv, y_cv, X_test_lr, X_test, y_test) -> None:
+    # logistic regression uses scaled data (X_cv_lr, X_test_lr)
     evaluate_single_model(lr, "Logistic Regression", X_cv_lr, y_cv, X_test_lr, y_test)
 
-    # evaluate random forest with lower threshold to handle class imbalance
+    # random forest and xgboost use unscaled data
+    # threshold=0.3 increases recall — better to flag a false alarm than miss a churner
     evaluate_single_model(rf, "Random Forest", X_cv, y_cv, X_test, y_test, threshold=0.3)
+    evaluate_single_model(xgb, "XGBoost", X_cv, y_cv, X_test, y_test, threshold=0.3)

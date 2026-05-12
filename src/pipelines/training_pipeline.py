@@ -16,8 +16,8 @@ def run_training_pipeline(filepath: str) -> None:
     # encode and clean features for model consumption
     df = transform(df)
 
-    # train model and split data into cv and test sets
-    lr, rf, X_cv_lr, X_cv, y_cv, X_test_lr, X_test, y_test = train(df)
+    # train all models and split data into cv and test sets
+    lr, rf, xgb, X_cv_lr, X_cv, y_cv, X_test_lr, X_test, y_test = train(df)
 
-    # report precision, recall and f1 to assess bias and variance
-    evaluate(lr, rf, X_cv_lr, X_cv, y_cv, X_test_lr, X_test, y_test)
+    # report metrics for all three models
+    evaluate(lr, rf, xgb, X_cv_lr, X_cv, y_cv, X_test_lr, X_test, y_test)
