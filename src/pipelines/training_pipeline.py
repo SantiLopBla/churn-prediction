@@ -6,22 +6,19 @@ from src.models.train import train
 from src.models.tune import tune_xgboost
 from src.models.evaluate import evaluate
 
-
+# This function trains the models with the data
 def run_training_pipeline(filepath: str) -> None:
-    # load raw data from disk
-    df = load_csv(filepath)
-
-    # ensure data meets minimum quality requirements before processing
+    # Loads,validates and transform the Dataframe
+    df = load_csv(filepath) 
     validate(df)
-
-    # encode and clean features for model consumption
     df = transform(df)
 
-    # train all models — returns X_train and y_train for tuning
+    # Separete data to train. Order: Logistic Regression, Random Forest, XGBoost.
+    # It is separated in training set, cross-validation set and testing set
     lr, rf, xgb, X_train, y_train, X_cv_lr, X_cv, y_cv, X_test_lr, X_test, y_test = train(df)
 
-    # tune xgboost using the same X_train from the training split
-    xgb = tune_xgboost(X_train, y_train)
+    # tune_xgb is replacing xgb "base model"
+    tuned_xgb = tune_xgboost(X_train, y_train)
 
-    # report metrics for all three models
-    evaluate(lr, rf, xgb, X_cv_lr, X_cv, y_cv, X_test_lr, X_test, y_test)
+    # Evaluates all the models. Order: Logistic Regression, Random Forest, XGBoost.
+    evaluate(lr, rf, tuned_xgb, X_cv_lr, X_cv, y_cv, X_test_lr, X_test, y_test)
