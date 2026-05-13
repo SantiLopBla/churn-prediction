@@ -88,17 +88,6 @@ def engineer_features (df_copy):
     
     #Create new columns
     df_copy ["charges_per_tenure"] = df_copy ["monthlycharges"] / (df_copy ["tenure"] + 1)
-    
-    df_copy["total_services"] = (
-        df_copy["phoneservice"] +
-        df_copy["onlinesecurity_yes"] +
-        df_copy["onlinebackup_yes"] +
-        df_copy["deviceprotection_yes"] +
-        df_copy["techsupport_yes"] +
-        df_copy["streamingtv_yes"] +
-        df_copy["streamingmovies_yes"]
-    )
-    
     df_copy ["charge_to_total_ratio"]=df_copy ["monthlycharges"]/(df_copy ["totalcharges"]+1)
     df_copy ["new_costumer"] = np.where(df_copy ["tenure"] <= 12 , 1 , 0)
 
