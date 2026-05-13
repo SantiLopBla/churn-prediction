@@ -100,11 +100,12 @@ def transform(df):
     else:
         print(f"Warning: 'customerid' not found. Available columns: {list(df_copy.columns)}")
 
+    # the secuence needs to be in this exact same order for correct data cleaning
     df_copy = fix_column_types(df_copy)
+    df_copy = impute_missing_values(df_copy)
     df_copy = encode_binary_columns(df_copy)
     df_copy = encode_categorical_columns(df_copy)
-    df_copy = impute_missing_values(df_copy)
-
+    
     print(f"Transformation complete. Final shape: {df_copy.shape}")
 
     return df_copy
