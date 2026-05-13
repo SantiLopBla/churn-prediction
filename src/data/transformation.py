@@ -1,4 +1,5 @@
 import pandas as pd
+import numpy as np
 
 # two-value columns — mapped directly to 0/1
 binary_columns = [
@@ -83,9 +84,27 @@ def encode_binary_columns(df):
 
     return df_copy
 
+def engineer_features (df_copy):
+    
+    #Create new columns
+    df_copy ["charges_per_tenure"] = df_copy ["monthlycharges"] / (df_copy ["tenure"] + 1)
+    
+    df_copy["total_services"] = (
+        df_copy["phoneservice"] +
+        df_copy["onlinesecurity_yes"] +
+        df_copy["onlinebackup_yes"] +
+        df_copy["deviceprotection_yes"] +
+        df_copy["techsupport_yes"] +
+        df_copy["streamingtv_yes"] +
+        df_copy["streamingmovies_yes"]
+    )
+    
+    df_copy ["charge_to_total_ratio"]=df_copy ["monthlycharges"]/(df_copy ["totalcharges"]+1)
+    df_copy ["new_costumer"] = np.where(df_copy ["tenure"] <= 12 , 1 , 0)
 
-def transform(df):
-    df_copy = df.copy()
+    return df_copy
+
+def transform(df_copy):
 
     # normalize column names first so everything downstream is consistent
     df_copy.columns = df_copy.columns.str.lower().str.strip()
@@ -105,6 +124,8 @@ def transform(df):
     df_copy = impute_missing_values(df_copy)
     df_copy = encode_binary_columns(df_copy)
     df_copy = encode_categorical_columns(df_copy)
+    
+    df_copy = engineer_features(df_copy)
     
     print(f"Transformation complete. Final shape: {df_copy.shape}")
 
