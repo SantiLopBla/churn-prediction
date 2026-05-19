@@ -6,13 +6,13 @@ End-to-end machine learning project that predicts customer churn using the Telco
 
 ## Results
 
-| Model               | Accuracy | Precision | Recall | F1     |
-|---------------------|----------|-----------|--------|--------|
-| Logistic Regression | 0.7589   | 0.5298    | 0.8075 | 0.6398 |
-| Random Forest       | 0.7674   | 0.5502    | 0.6738 | 0.6058 |
-| **XGBoost (tuned)** | **0.7887**| **0.5856**| **0.6952** | **0.6357** |
+| Model               | Accuracy | Precision | Recall | F1     | AUC-ROC |
+|---------------------|----------|-----------|--------|--------|---------|
+| Logistic Regression | 0.7589   | 0.5298    | 0.8075 | 0.6398 | 0.8470  |
+| Random Forest       | 0.7617   | 0.5373    | 0.7326 | 0.6199 | 0.8125  |
+| **XGBoost (tuned)** | **0.7872** | **0.5830** | **0.6952** | **0.6341** | **0.8467** |
 
-> Recall is prioritized over precision: in a churn context, missing a churner (false negative) is more costly than a false alarm (false positive). All models use class imbalance handling (`class_weight="balanced"` / `scale_pos_weight`). Random Forest and XGBoost use optimized decision thresholds found via F1 maximization on the cross-validation set.
+> Recall is prioritized over precision: in a churn context, missing a churner (false negative) is more costly than a false alarm (false positive). All models use class imbalance handling (`class_weight="balanced"` / `scale_pos_weight`). Random Forest and XGBoost use optimized decision thresholds found via F1 maximization on the cross-validation set (thresholds constrained to 0.3–0.7 to avoid degenerate values). AUC-ROC is reported as a threshold-independent measure of model quality.
 
 ---
 
@@ -43,17 +43,15 @@ churn-prediction/
 │   ├── 01_EDA.ipynb               # Full exploratory data analysis
 │   └── 02_model_debug.ipynb       # Model debugging and inspection
 │
-├── reports/                       # Exported figures and evaluation summaries
-│
 ├── src/
 │   ├── data/
-│   │   ├── ingestion.py           # CSV loading with validation
-│   │   ├── transformation.py      # Cleaning, encoding, feature engineering
+│   │   ├── ingestion.py           # CSV loading with existence and type checks
+│   │   ├── transformation.py      # Cleaning, encoding, imputation, feature engineering
 │   │   └── validation.py          # Schema checks before processing
 │   │
 │   ├── models/
-│   │   ├── train.py               # Trains LR, RF, XGBoost with 80/10/10 split
-│   │   ├── evaluate.py            # Metrics + confusion matrix per model
+│   │   ├── train.py               # Splits data, fits imputer on train only, trains LR/RF/XGBoost
+│   │   ├── evaluate.py            # Metrics, AUC-ROC, threshold optimization, confusion matrices
 │   │   ├── tune.py                # GridSearchCV hyperparameter tuning for XGBoost
 │   │   └── predict.py             # Inference on new data
 │   │
@@ -65,6 +63,7 @@ churn-prediction/
 │   ├── test_validation.py         # Tests for validate() — empty df, missing columns
 │   └── test_transformation.py     # Tests for fix_column_types, encode_binary, engineer_features
 ├── conftest.py                    # pytest configuration
+├── requirements.txt               # Pinned dependencies
 ├── main.py                        # Entry point — runs training pipeline
 └── README.md
 ```
@@ -74,15 +73,15 @@ churn-prediction/
 ## Pipeline Overview
 
 ```
-Raw CSV → validate() → transform() → train() → tune_xgboost() → evaluate()
+Raw CSV → validate() → clean_and_encode() → train() → tune_xgboost() → evaluate()
 ```
 
 1. **Ingestion** — loads CSV, checks file type and existence
 2. **Validation** — verifies required columns before any processing
-3. **Transformation** — normalizes column names, fixes `TotalCharges` dtype, imputes missing values, binary + one-hot encoding, feature engineering
-4. **Training** — 80/10/10 split (train/cv/test), trains Logistic Regression, Random Forest, XGBoost with imbalance handling
+3. **Transformation** — normalizes column names, fixes `TotalCharges` dtype, binary + one-hot encoding, feature engineering. Does not impute — no statistical fitting happens here.
+4. **Training** — 80/10/10 split first, then `SimpleImputer` fitted on `X_train` only and applied to all three subsets. Trains Logistic Regression, Random Forest, XGBoost with imbalance handling.
 5. **Tuning** — GridSearchCV on XGBoost across learning rate, max depth, and n_estimators
-6. **Evaluation** — metrics on CV and test sets, optimized thresholds, confusion matrices
+6. **Evaluation** — metrics on CV and test sets, optimized thresholds (0.3–0.7 range), AUC-ROC, confusion matrices
 
 ---
 
@@ -90,11 +89,11 @@ Raw CSV → validate() → transform() → train() → tune_xgboost() → evalua
 
 Three features created during transformation:
 
-| Feature               | Formula                                    | Rationale                                        |
-|-----------------------|--------------------------------------------|--------------------------------------------------|
-| `charges_per_tenure`  | `MonthlyCharges / (tenure + 1)`            | Cost efficiency per month of customer lifetime   |
+| Feature                 | Formula                                  | Rationale                                           |
+|-------------------------|------------------------------------------|-----------------------------------------------------|
+| `charges_per_tenure`    | `MonthlyCharges / (tenure + 1)`          | Cost efficiency per month of customer lifetime      |
 | `charge_to_total_ratio` | `MonthlyCharges / (TotalCharges + 1)`    | Detects early-stage customers with low accumulation |
-| `new_customer`        | `1 if tenure <= 12 else 0`                 | Flags first-year customers (highest churn risk)  |
+| `new_customer`          | `1 if tenure <= 12 else 0`               | Flags first-year customers (highest churn risk)     |
 
 ---
 
@@ -117,7 +116,7 @@ git clone https://github.com/SantiLopBla/churn-prediction.git
 cd churn-prediction
 
 # 2. Install dependencies
-pip install pandas numpy scikit-learn xgboost joblib matplotlib seaborn
+pip install -r requirements.txt
 
 # 3. Add dataset
 # Place Telco_Customer_Churn.csv in data/raw/
@@ -125,7 +124,9 @@ pip install pandas numpy scikit-learn xgboost joblib matplotlib seaborn
 # 4. Run the training pipeline
 python main.py
 ```
+
 ---
+
 ## Testing
 
 The project includes 5 automated tests covering the data validation and transformation layers.
@@ -138,6 +139,7 @@ pytest -v
 pytest tests/test_validation.py -v
 pytest tests/test_transformation.py -v
 ```
+
 ---
 
 ## Dataset
