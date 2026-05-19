@@ -84,12 +84,13 @@ def encode_binary_columns(df):
 
     return df_copy
 
-def engineer_features (df_copy):
+def engineer_features (df):
     
     #Create new columns
-    df_copy ["charges_per_tenure"] = df_copy ["monthlycharges"] / (df_copy ["tenure"] + 1)
-    df_copy ["charge_to_total_ratio"]=df_copy ["monthlycharges"]/(df_copy ["totalcharges"]+1)
-    df_copy ["new_costumer"] = np.where(df_copy ["tenure"] <= 12 , 1 , 0)
+    df_copy = df.copy()
+    df_copy["charges_per_tenure"] = df_copy["monthlycharges"] / (df_copy["tenure"] + 1)
+    df_copy["charge_to_total_ratio"] = df_copy["monthlycharges"] / (df_copy["totalcharges"] + 1)
+    df_copy["new_customer"] = np.where(df_copy["tenure"] <= 12, 1, 0)
 
     return df_copy
 
